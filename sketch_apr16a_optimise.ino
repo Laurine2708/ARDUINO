@@ -69,10 +69,25 @@ void loop() {
   //CAPTURE DE L'EVENEMENT
   if(digitalRead(2)==LOW || digitalRead(3)==LOW || digitalRead(4)==LOW || digitalRead(5)==LOW){
       //CALL EVENT REPONSE
-      if(digitalRead(2)==LOW) CallAnswer(2,A2,2);
-      if(digitalRead(3)==LOW) CallAnswer(3,A3,3);
-      if(digitalRead(4)==LOW) CallAnswer(4,A4,4);
-      if(digitalRead(5)==LOW) CallAnswer(5,A5,5);
+      if (digitalRead(2) == LOW) {
+    Serial.println("BUZZ:Joueur 1");
+    CallAnswer(2, A2, 2);
+  }
+
+  if (digitalRead(3) == LOW) {
+    Serial.println("BUZZ:Joueur 2");
+    CallAnswer(3, A3, 3);
+  }
+
+  if (digitalRead(4) == LOW) {
+    Serial.println("BUZZ:Joueur 3");
+    CallAnswer(4, A4, 4);
+  }
+
+  if (digitalRead(5) == LOW) {
+    Serial.println("BUZZ:Joueur 4");
+    CallAnswer(5, A5, 5);
+  }
 
   }
 
