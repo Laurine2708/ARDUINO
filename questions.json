@@ -1,0 +1,200 @@
+{
+    "questions": [
+        {
+            "question": "Quelle est la capitale de l’Allemagne ?",
+            "reponse": "Berlin"
+        },
+        {
+            "question": "Qui a peint la Joconde ?",
+            "reponse": "Leonardo da Vinci"
+        },
+        {
+            "question": "Combien de planètes y a-t-il dans le système solaire ?",
+            "reponse": "8"
+        },
+        {
+            "question": "Quel est le plus grand océan du monde ?",
+            "reponse": "Pacifique"
+        },
+        {
+            "question": "En quelle année a eu lieu la Révolution française ?",
+            "reponse": "1789"
+        },
+        {
+            "question": "Quel est le symbole chimique de l’or ?",
+            "reponse": "Au"
+        },
+        {
+            "question": "Qui a écrit Les Misérables ?",
+            "reponse": "Victor Hugo"
+        },
+        {
+            "question": "Quelle est la plus haute montagne du monde ?",
+            "reponse": "Everest"
+        },
+        {
+            "question": "Quel est le plus grand désert chaud du monde ?",
+            "reponse": "Sahara"
+        },
+        {
+            "question": "Combien de continents y a-t-il sur Terre ?",
+            "reponse": "7"
+        },
+        {
+            "question": "Quel est l’animal le plus rapide du monde ?",
+            "reponse": "Faucon pèlerin"
+        },
+        {
+            "question": "Quelle langue est la plus parlée au monde ?",
+            "reponse": "Mandarin"
+        },
+        {
+            "question": "Quel est le plus long fleuve du monde ?",
+            "reponse": "Nil"
+        },
+        {
+            "question": "Qui a découvert la gravité ?",
+            "reponse": "Isaac Newton"
+        },
+        {
+            "question": "Quel pays a la plus grande population ?",
+            "reponse": "Chine"
+        },
+        {
+            "question": "Quelle est la capitale du Japon ?",
+            "reponse": "Tokyo"
+        },
+        {
+            "question": "Quel est l’organe principal de la respiration ?",
+            "reponse": "Poumons"
+        },
+        {
+            "question": "Combien de côtés a un hexagone ?",
+            "reponse": "6"
+        },
+        {
+            "question": "Quelle est la monnaie du Royaume-Uni ?",
+            "reponse": "Livre sterling"
+        },
+        {
+            "question": "Quel gaz les plantes absorbent-elles ?",
+            "reponse": "Dioxyde de carbone"
+        },
+        {
+            "question": "Qui a inventé l’ampoule ?",
+            "reponse": "Thomas Edison"
+        },
+        {
+            "question": "Quel est le plus grand mammifère ?",
+            "reponse": "Baleine bleue"
+        },
+        {
+            "question": "Quel est le langage utilisé pour créer des pages web ?",
+            "reponse": "HTML"
+        },
+        {
+            "question": "Quelle est la capitale de l’Italie ?",
+            "reponse": "Rome"
+        },
+        {
+            "question": "Quel métal est liquide à température ambiante ?",
+            "reponse": "Mercure"
+        },
+        {
+            "question": "Quel est le plus petit os du corps humain ?",
+            "reponse": "L’étrier"
+        },
+        {
+            "question": "Qui a écrit Harry Potter ?",
+            "reponse": "J.K. Rowling"
+        },
+        {
+            "question": "Quelle planète est la plus proche du Soleil ?",
+            "reponse": "Mercure"
+        },
+        {
+            "question": "Combien de jours dans une année bissextile ?",
+            "reponse": "366"
+        },
+        {
+            "question": "Quel est le plus grand pays du monde ?",
+            "reponse": "Russie"
+        },
+        {
+            "question": "Quelle est la capitale de l’Espagne ?",
+            "reponse": "Madrid"
+        },
+        {
+            "question": "Quel est le résultat de 9 x 9 ?",
+            "reponse": "81"
+        },
+        {
+            "question": "Quel instrument mesure les tremblements de terre ?",
+            "reponse": "Sismographe"
+        },
+        {
+            "question": "Quelle est la langue officielle du Brésil ?",
+            "reponse": "Portugais"
+        },
+        {
+            "question": "Quel est le plus grand lac du monde ?",
+            "reponse": "Mer Caspienne"
+        },
+        {
+            "question": "Qui a peint La Nuit étoilée ?",
+            "reponse": "Van Gogh"
+        },
+        {
+            "question": "Quel est l’animal symbole de la France ?",
+            "reponse": "Coq"
+        },
+        {
+            "question": "Quelle est la formule de l’eau ?",
+            "reponse": "H2O"
+        },
+        {
+            "question": "Quel est le continent le plus froid ?",
+            "reponse": "Antarctique"
+        },
+        {
+            "question": "Combien de minutes dans une heure ?",
+            "reponse": "60"
+        },
+        {
+            "question": "Quelle est la capitale du Canada ?",
+            "reponse": "Ottawa"
+        },
+        {
+            "question": "Qui a inventé le téléphone ?",
+            "reponse": "Alexander Graham Bell"
+        },
+        {
+            "question": "Quel est le plus grand organe du corps humain ?",
+            "reponse": "La peau"
+        },
+        {
+            "question": "Quelle est la planète rouge ?",
+            "reponse": "Mars"
+        },
+        {
+            "question": "Combien de cordes a une guitare classique ?",
+            "reponse": "6"
+        },
+        {
+            "question": "Quel est le plus grand volcan actif ?",
+            "reponse": "Mauna Loa"
+        },
+        {
+            "question": "Quelle est la capitale de l’Australie ?",
+            "reponse": "Canberra"
+        },
+        {
+            "question": "Qui a écrit Roméo et Juliette ?",
+            "reponse": "William Shakespeare"
+        },
+        {
+            "question": "Quel est le plus grand océan ?",
+            "reponse": "Pacifique"
+        }
+    ]
+}
