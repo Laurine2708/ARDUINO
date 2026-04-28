@@ -2,6 +2,7 @@ import tkinter as tk
 import serial
 import threading
 import time
+import queue
 
 # ---------------- CONFIG ----------------
 PORT = "COM4"
@@ -27,6 +28,9 @@ questions = [
 ]
 index_question = 0
 
+# file pour communication thread -> GUI
+serial_queue = queue.Queue()
+
 # ---------------- UI ----------------
 root = tk.Tk()
 root.title("QUIZ ARDUINO BUZZER")
@@ -51,7 +55,6 @@ question_label = tk.Label(
 )
 question_label.pack(pady=10)
 
-# Label pour afficher le joueur qui a buzzé
 buzzer_label = tk.Label(
     root,
     text="",
@@ -115,21 +118,23 @@ create_card("Joueur 3", 2)
 create_card("Joueur 4", 3)
 
 # ---------------- LOGIQUE ----------------
-
 def update_scores():
     for p in players:
         player_frames[p]["score"].config(text=str(players[p]))
 
 def set_question():
-    global tentative, bonne_reponse
+    global tentative, bonne_reponse, joueur_actif
     if index_question < len(questions):
         question_label.config(text=questions[index_question])
     else:
         question_label.config(text="FIN DU JEU")
     tentative = 0
     bonne_reponse = False
+    joueur_actif = None
     result_label.config(text="", bg="#0f111a")
-    buzzer_label.config(text="")  # Réinitialise le label du buzzer
+    buzzer_label.config(text="")
+    for p in player_frames:
+        player_frames[p]["card"].config(highlightbackground="#2c3142")
 
 def highlight_player(name):
     for p in player_frames:
@@ -138,14 +143,17 @@ def highlight_player(name):
     buzzer_label.config(text=f"{name} a buzzé !")
 
 def reset_game():
-    global index_question
+    global index_question, joueur_actif, tentative, bonne_reponse
     for p in players:
         players[p] = 0
     index_question = 0
+    tentative = 0
+    joueur_actif = None
+    bonne_reponse = False
     update_scores()
     set_question()
-    buzzer_label.config(text="RESET")
     result_label.config(text="", bg="#0f111a")
+    buzzer_label.config(text="RESET")
 
 def next_question():
     global index_question
@@ -173,38 +181,56 @@ btn("RESET", "#ff4d4d", reset_game).grid(row=0, column=0, padx=10)
 btn("QUESTION SUIVANTE", "#00aaff", next_question).grid(row=0, column=1, padx=10)
 
 # ---------------- ARDUINO ----------------
+def process_serial_message(msg):
+    global joueur_actif, tentative, bonne_reponse
+
+    if msg in players:
+        joueur_actif = msg
+        highlight_player(msg)
+
+    elif msg == "true":
+        if joueur_actif and not bonne_reponse:
+            score = points[min(tentative, len(points) - 1)]
+            players[joueur_actif] += score
+            update_scores()
+            result_label.config(text=f"BONNE RÉPONSE +{score}", bg="green")
+            bonne_reponse = True
+
+    elif msg == "false":
+        if joueur_actif and not bonne_reponse:
+            result_label.config(text="MAUVAISE RÉPONSE", bg="red")
+            tentative += 1
+            joueur_actif = None
+            if tentative >= 4:
+                result_label.config(text="PERSONNE N'A TROUVÉ", bg="gray")
 
 def listen_arduino():
-    global joueur_actif, tentative, bonne_reponse
     try:
         ser = serial.Serial(PORT, BAUDRATE, timeout=1)
         time.sleep(2)
         while True:
             if ser.in_waiting > 0:
-                msg = ser.readline().decode().strip()
-                print(msg)
-                if msg in players:
-                    joueur_actif = msg
-                    highlight_player(msg)
-                elif msg == "true":
-                    result_label.config(text="BONNE RÉPONSE", bg="green")
-                    if joueur_actif:
-                        players[joueur_actif] += points[min(tentative, 3)]
-                    update_scores()
-                    bonne_reponse = True
-                elif msg == "false":
-                    result_label.config(text="MAUVAISE RÉPONSE", bg="red")
-                    tentative += 1
-                    joueur_actif = None
-                    if tentative >= 4 and not bonne_reponse:
-                        result_label.config(text="PERSONNE N'A TROUVÉ", bg="gray")
+                msg = ser.readline().decode(errors="ignore").strip()
+                if msg:
+                    serial_queue.put(msg)
     except Exception as e:
-        print("Erreur Arduino :", e)
+        serial_queue.put(f"ERROR:{e}")
+
+def poll_serial_queue():
+    while not serial_queue.empty():
+        msg = serial_queue.get()
+
+        if msg.startswith("ERROR:"):
+            result_label.config(text=msg[6:], bg="red")
+        else:
+            process_serial_message(msg)
+
+    root.after(50, poll_serial_queue)
 
 threading.Thread(target=listen_arduino, daemon=True).start()
+root.after(50, poll_serial_queue)
 
 # INIT
 set_question()
 update_scores()
-
 root.mainloop()
