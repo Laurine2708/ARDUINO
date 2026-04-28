@@ -33,7 +33,6 @@ root.title("QUIZ ARDUINO BUZZER")
 root.geometry("1000x650")
 root.configure(bg="#0f111a")
 
-
 title = tk.Label(
     root,
     text="QUIZ ARDUINO BUZZER",
@@ -42,7 +41,6 @@ title = tk.Label(
     fg="white"
 )
 title.pack(pady=10)
-
 
 question_label = tk.Label(
     root,
@@ -53,16 +51,15 @@ question_label = tk.Label(
 )
 question_label.pack(pady=10)
 
-
-player_label = tk.Label(
+# Label pour afficher le joueur qui a buzzé
+buzzer_label = tk.Label(
     root,
-    text="En attente...",
-    font=("Arial", 16),
+    text="",
+    font=("Arial", 16, "bold"),
     bg="#0f111a",
-    fg="gray"
+    fg="#00ff99"
 )
-player_label.pack(pady=5)
-
+buzzer_label.pack(pady=5)
 
 result_label = tk.Label(
     root,
@@ -71,7 +68,6 @@ result_label = tk.Label(
     width=30
 )
 result_label.pack(pady=10)
-
 
 # ---------------- JOUEURS ----------------
 frame_players = tk.Frame(root, bg="#0f111a")
@@ -113,12 +109,10 @@ def create_card(name, col):
         "score": score
     }
 
-
 create_card("Joueur 1", 0)
 create_card("Joueur 2", 1)
 create_card("Joueur 3", 2)
 create_card("Joueur 4", 3)
-
 
 # ---------------- LOGIQUE ----------------
 
@@ -126,49 +120,41 @@ def update_scores():
     for p in players:
         player_frames[p]["score"].config(text=str(players[p]))
 
-
 def set_question():
     global tentative, bonne_reponse
-
     if index_question < len(questions):
         question_label.config(text=questions[index_question])
     else:
         question_label.config(text="FIN DU JEU")
-
     tentative = 0
     bonne_reponse = False
     result_label.config(text="", bg="#0f111a")
-
+    buzzer_label.config(text="")  # Réinitialise le label du buzzer
 
 def highlight_player(name):
     for p in player_frames:
         player_frames[p]["card"].config(highlightbackground="#2c3142")
-
     player_frames[name]["card"].config(highlightbackground="#00d4ff")
-
+    buzzer_label.config(text=f"{name} a buzzé !")
 
 def reset_game():
     global index_question
     for p in players:
         players[p] = 0
-
     index_question = 0
     update_scores()
     set_question()
-    player_label.config(text="RESET")
+    buzzer_label.config(text="RESET")
     result_label.config(text="", bg="#0f111a")
-
 
 def next_question():
     global index_question
     index_question += 1
     set_question()
 
-
 # ---------------- BOUTONS ----------------
 btn_frame = tk.Frame(root, bg="#0f111a")
 btn_frame.pack(pady=15)
-
 
 def btn(text, color, cmd):
     return tk.Button(
@@ -183,56 +169,38 @@ def btn(text, color, cmd):
         pady=10
     )
 
-
 btn("RESET", "#ff4d4d", reset_game).grid(row=0, column=0, padx=10)
 btn("QUESTION SUIVANTE", "#00aaff", next_question).grid(row=0, column=1, padx=10)
-
 
 # ---------------- ARDUINO ----------------
 
 def listen_arduino():
     global joueur_actif, tentative, bonne_reponse
-
     try:
         ser = serial.Serial(PORT, BAUDRATE, timeout=1)
         time.sleep(2)
-
         while True:
             if ser.in_waiting > 0:
                 msg = ser.readline().decode().strip()
                 print(msg)
-
-                # JOUEUR QUI BUZZ
                 if msg in players:
                     joueur_actif = msg
-                    player_label.config(text=f"{msg} a buzzé")
                     highlight_player(msg)
-
-                # BONNE REPONSE
                 elif msg == "true":
                     result_label.config(text="BONNE RÉPONSE", bg="green")
-
                     if joueur_actif:
                         players[joueur_actif] += points[min(tentative, 3)]
-
                     update_scores()
                     bonne_reponse = True
-
-                # MAUVAISE REPONSE
                 elif msg == "false":
                     result_label.config(text="MAUVAISE RÉPONSE", bg="red")
                     tentative += 1
                     joueur_actif = None
-
-                    # PERSONNE TROUVE
                     if tentative >= 4 and not bonne_reponse:
                         result_label.config(text="PERSONNE N'A TROUVÉ", bg="gray")
-
     except Exception as e:
         print("Erreur Arduino :", e)
 
-
-# THREAD
 threading.Thread(target=listen_arduino, daemon=True).start()
 
 # INIT
