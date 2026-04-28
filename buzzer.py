@@ -183,19 +183,29 @@ def listen_arduino():
             if ser.in_waiting > 0:
                 msg = ser.readline().decode().strip()
                 print(msg)
-                if msg in players:
-                    joueur_actif = msg
-                    highlight_player(msg)
+                if msg.startswith("BUZZ:"):
+                    joueur = msg.split(":")[1]
+                    joueur_actif = joueur
+                    highlight_player(joueur)
                 elif msg == "true":
-                    result_label.config(text="BONNE RÉPONSE", bg="green")
                     if joueur_actif:
-                        players[joueur_actif] += points[min(tentative, 3)]
+                        if tentative == 0:
+                            players[joueur_actif] += 5
+                        else:
+                            players[joueur_actif] += points[tentative]
+                    result_label.config(text="BONNE RÉPONSE", bg="green")
                     update_scores()
                     bonne_reponse = True
+                    # --- Ajout de l'appel à next_question() ici ---
+                    next_question()
+                    # -----------------------------------------------
                 elif msg == "false":
+                    if joueur_actif:
+                        players[joueur_actif] -= 1
                     result_label.config(text="MAUVAISE RÉPONSE", bg="red")
                     tentative += 1
                     joueur_actif = None
+                    update_scores()
                     if tentative >= 4 and not bonne_reponse:
                         result_label.config(text="PERSONNE N'A TROUVÉ", bg="gray")
     except Exception as e:
