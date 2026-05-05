@@ -42,6 +42,7 @@ except:
     questions = []
 
 index_question = 0
+wrong_attempts = 0
 
 # ---------------- UI ----------------
 root = tk.Tk()
@@ -99,6 +100,35 @@ timer_label.pack(pady=5)
 canvas = tk.Canvas(left_frame, width=500, height=25, bg="#222", highlightthickness=0)
 canvas.pack(pady=10)
 bar = canvas.create_rectangle(0, 0, 500, 25, fill="green")
+
+# ---------------- PROPOSITIONS ----------------
+choices_frame = tk.Frame(left_frame, bg="#0f111a")
+choices_frame.pack(pady=10)
+
+choice_labels = []
+
+def show_choices(propositions):
+    for w in choice_labels:
+        w.destroy()
+    choice_labels.clear()
+
+    for p in propositions:
+        lbl = tk.Label(choices_frame,
+                       text=p,
+                       font=("Arial", 14, "bold"),
+                       bg="#1b1f2a",
+                       fg="white",
+                       width=35,
+                       pady=5)
+        lbl.pack(pady=3)
+        choice_labels.append(lbl)
+
+def show_choices_progressive():
+    q = questions[index_question]
+    props = q["propositions"]
+
+    remaining = max(1, 4 - wrong_attempts)
+    show_choices(props[:remaining])
 
 # ---------------- PLAYERS ----------------
 frame_players = tk.Frame(left_frame, bg="#0f111a")
@@ -205,19 +235,25 @@ def update_timer():
 # ---------------- QUESTIONS ----------------
 
 def set_question():
-    global timer_value, timer_running, joueur_actif, paused
+    global timer_value, timer_running, joueur_actif, paused, wrong_attempts
 
     stop_timer()
     joueur_actif = None
     paused = False
-    pause_btn.config(text="⏸ PAUSE", bg="#ffaa00")
+    wrong_attempts = 0
 
     clear_ui()
 
     if index_question < len(questions):
         q = questions[index_question]
+
         question_label.config(text=q["question"])
-        answer_label.config(text=q["reponse"])
+        answer_label.config(text="")
+
+        for w in choice_labels:
+            w.destroy()
+        choice_labels.clear()
+
     else:
         question_label.config(text="FIN DU JEU")
         answer_label.config(text="")
@@ -236,10 +272,10 @@ def next_question():
     index_question += 1
     set_question()
 
-# ---------------- RESET QUIZ ----------------
+# ---------------- RESET ----------------
 
 def reset_quiz():
-    global index_question, timer_value, timer_running, joueur_actif, paused
+    global index_question, timer_value, timer_running, joueur_actif, paused, wrong_attempts
 
     stop_timer()
 
@@ -248,6 +284,7 @@ def reset_quiz():
     timer_running = False
     paused = False
     joueur_actif = None
+    wrong_attempts = 0
 
     for p in players:
         players[p] = 0
@@ -315,7 +352,7 @@ def listen_arduino():
         pass
 
 def process_events():
-    global joueur_actif, timer_running
+    global joueur_actif, timer_running, wrong_attempts
 
     while not event_queue.empty():
         msg = event_queue.get()
@@ -350,6 +387,10 @@ def process_events():
             result_label.config(text="✖ MAUVAISE RÉPONSE", fg="red")
 
             joueur_actif = None
+            wrong_attempts += 1
+
+            show_choices_progressive()
+
             root.after(1200, clear_ui)
 
             timer_running = True
