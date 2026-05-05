@@ -2,9 +2,11 @@ import tkinter as tk
 import serial
 import threading
 import time
+import json
+import queue
 
 # ---------------- CONFIG ----------------
-PORT = "COM4"
+PORT = "COM10"
 BAUDRATE = 9600
 
 # ---------------- DATA ----------------
@@ -15,22 +17,37 @@ players = {
     "Joueur 4": 0
 }
 
-points = [5, 3, 2, 1]
-tentative = 0
 joueur_actif = None
-bonne_reponse = False
 
-questions = [
-    "La Terre est plate ?",
-    "Python est un langage de programmation ?",
-    "Le Soleil est une planète ?"
-]
+player_names = {
+    "1": "Joueur 1",
+    "2": "Joueur 2",
+    "3": "Joueur 3",
+    "4": "Joueur 4"
+}
+
+event_queue = queue.Queue()
+
+# -------- TIMER --------
+TIMER_MAX = 15
+timer_value = TIMER_MAX
+timer_running = False
+
+# ---------------- QUESTIONS ----------------
+try:
+    with open("questions.json", "r", encoding="utf-8") as f:
+        data = json.load(f)
+        questions = data["questions"]
+except Exception as e:
+    print("Erreur JSON :", e)
+    questions = []
+
 index_question = 0
 
 # ---------------- UI ----------------
 root = tk.Tk()
 root.title("QUIZ ARDUINO BUZZER")
-root.geometry("1000x650")
+root.geometry("1000x700")
 root.configure(bg="#0f111a")
 
 title = tk.Label(
@@ -76,38 +93,16 @@ frame_players.pack(pady=25)
 player_frames = {}
 
 def create_card(name, col):
-    card = tk.Frame(
-        frame_players,
-        bg="#1b1f2a",
-        width=200,
-        height=140,
-        highlightthickness=2,
-        highlightbackground="#2c3142"
-    )
+    card = tk.Frame(frame_players, bg="#1b1f2a",
+                    width=200, height=140,
+                    highlightthickness=2,
+                    highlightbackground="#2c3142")
     card.grid(row=0, column=col, padx=15)
     card.pack_propagate(False)
 
-    tk.Label(
-        card,
-        text=name,
-        font=("Arial", 14, "bold"),
-        bg="#1b1f2a",
-        fg="white"
-    ).pack(pady=10)
-
-    score = tk.Label(
-        card,
-        text="0",
-        font=("Arial", 28, "bold"),
-        bg="#1b1f2a",
-        fg="#00ff99"
-    )
-    score.pack()
-
-    player_frames[name] = {
-        "card": card,
-        "score": score
-    }
+    tk.Label(card, text=name,
+             font=("Arial", 14, "bold"),
+             bg="#1b1f2a", fg="white").pack(pady=10)
 
 create_card("Joueur 1", 0)
 create_card("Joueur 2", 1)
@@ -123,7 +118,8 @@ def update_scores():
 def set_question():
     global tentative, bonne_reponse
     if index_question < len(questions):
-        question_label.config(text=questions[index_question])
+        question_label.config(text=questions[index_question]["question"])
+        answer_label.config(text=questions[index_question]["reponse"])
     else:
         question_label.config(text="FIN DU JEU")
     tentative = 0
@@ -138,17 +134,21 @@ def highlight_player(name):
     buzzer_label.config(text=f"{name} a buzzé !")
 
 def reset_game():
-    global index_question
+    global index_question, timer_running
+
     for p in players:
         players[p] = 0
     index_question = 0
+    timer_running = False
+
     update_scores()
     set_question()
     buzzer_label.config(text="RESET")
     result_label.config(text="", bg="#0f111a")
 
 def next_question():
-    global index_question
+    global index_question, timer_running
+    timer_running = False
     index_question += 1
     set_question()
 
@@ -213,8 +213,8 @@ def listen_arduino():
 
 threading.Thread(target=listen_arduino, daemon=True).start()
 
-# INIT
 set_question()
 update_scores()
+process_events()
 
 root.mainloop()
