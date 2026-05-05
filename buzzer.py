@@ -11,25 +11,29 @@ BAUDRATE = 9600
 
 # ---------------- DATA ----------------
 players = {
-    "Joueur1": 0,
-    "Joueur2": 0,
-    "Joueur3": 0,
-    "Joueur4": 0
+    "Joueur 1": 0,
+    "Joueur 2": 0,
+    "Joueur 3": 0,
+    "Joueur 4": 0
 }
 
-points = [5, 3, 2, 1]
 tentative = 0
 joueur_actif = None
 bonne_reponse = False
 
 player_names = {
-    "1": "Joueur1",
-    "2": "Joueur2",
-    "3": "Joueur3",
-    "4": "Joueur4"
+    "1": "Joueur 1",
+    "2": "Joueur 2",
+    "3": "Joueur 3",
+    "4": "Joueur 4"
 }
 
 event_queue = queue.Queue()
+
+# -------- TIMER --------
+TIMER_MAX = 15
+timer_value = TIMER_MAX
+timer_running = False
 
 # ---------------- QUESTIONS ----------------
 try:
@@ -82,6 +86,12 @@ buzzer_label = tk.Label(root, text="",
                         bg="#0f111a", fg="#00ff99")
 buzzer_label.pack(pady=5)
 
+# TIMER
+timer_label = tk.Label(root, text="⏱ 15",
+                       font=("Arial", 18, "bold"),
+                       bg="#0f111a", fg="#ffaa00")
+timer_label.pack(pady=5)
+
 # PLAYERS
 frame_players = tk.Frame(root, bg="#0f111a")
 frame_players.pack(pady=25)
@@ -116,8 +126,29 @@ def update_scores():
     for p in players:
         player_frames[p]["score"].config(text=str(players[p]))
 
+def update_timer():
+    global timer_value, timer_running
+
+    if not timer_running:
+        return
+
+    timer_label.config(text=f"⏱ {timer_value}")
+
+    if timer_value > 0:
+        timer_value -= 1
+        root.after(1000, update_timer)
+    else:
+        timer_running = False
+
+        result_label.config(text="⏱ TEMPS ÉCOULÉ",
+                            bg="orange", fg="white")
+
+        root.after(1500, lambda: result_label.config(text="", bg="#0f111a"))
+        root.after(2000, next_question)
+
 def set_question():
     global tentative, bonne_reponse, joueur_actif
+    global timer_value, timer_running
 
     tentative = 0
     bonne_reponse = False
@@ -129,9 +160,16 @@ def set_question():
     else:
         question_label.config(text="FIN DU JEU")
         answer_label.config(text="")
+        timer_running = False
+        return
 
     result_label.config(text="", bg="#0f111a")
     buzzer_label.config(text="")
+
+    # TIMER RESET
+    timer_value = TIMER_MAX
+    timer_running = True
+    update_timer()
 
 def highlight_player(name):
     for p in player_frames:
@@ -143,7 +181,7 @@ def highlight_player(name):
     buzzer_label.config(text=f"{name} a buzzé !")
 
 def reset_game():
-    global index_question, tentative, joueur_actif
+    global index_question, tentative, joueur_actif, timer_running
 
     for p in players:
         players[p] = 0
@@ -151,12 +189,14 @@ def reset_game():
     index_question = 0
     tentative = 0
     joueur_actif = None
+    timer_running = False
 
     update_scores()
     set_question()
 
 def next_question():
-    global index_question
+    global index_question, timer_running
+    timer_running = False
     index_question += 1
     set_question()
 
@@ -195,7 +235,7 @@ def listen_arduino():
 # ---------------- EVENT HANDLER ----------------
 
 def process_events():
-    global joueur_actif, tentative, bonne_reponse
+    global joueur_actif, tentative, timer_running
 
     while not event_queue.empty():
         msg = event_queue.get()
@@ -203,6 +243,9 @@ def process_events():
 
         # BUZZ
         if msg.startswith("BUZZ:"):
+            if not timer_running:
+                continue
+
             num = msg.split(":")[1].strip()
             joueur = player_names.get(num, num)
 
@@ -212,17 +255,15 @@ def process_events():
         # BONNE REPONSE
         elif msg == "true":
             if joueur_actif and joueur_actif in players:
-                if tentative == 0:
-                    players[joueur_actif] += 5
-                else:
-                    players[joueur_actif] += points[min(tentative-1, len(points)-1)]
-
+                # points selon temps restant
+                score = max(1, timer_value // 3)
+                players[joueur_actif] += score
                 update_scores()
+
+            timer_running = False
 
             result_label.config(text="✔ BONNE RÉPONSE",
                                 bg="green", fg="white")
-
-            bonne_reponse = True
 
             root.after(1500, lambda: result_label.config(text="", bg="#0f111a"))
             root.after(2000, next_question)
