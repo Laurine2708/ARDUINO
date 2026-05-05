@@ -43,21 +43,21 @@ except:
 
 index_question = 0
 
-# ---------------- FENÊTRES ----------------
+# ---------------- UI ----------------
 root = tk.Tk()
 root.title("QUIZ ARDUINO BUZZER")
 root.geometry("1200x700")
 root.configure(bg="#0f111a")
 
-# ===================== LEFT FRAME (JEU) =====================
+# ================= LEFT =================
 left_frame = tk.Frame(root, bg="#0f111a")
 left_frame.pack(side="left", fill="both", expand=True)
 
-# ===================== RIGHT FRAME (RANKING) =====================
+# ================= RIGHT =================
 right_frame = tk.Frame(root, bg="#1b1f2a", width=250)
 right_frame.pack(side="right", fill="y")
 
-# ---------------- TITRE ----------------
+# ---------------- TITLE ----------------
 tk.Label(left_frame, text="QUIZ ARDUINO BUZZER",
          font=("Arial", 26, "bold"),
          bg="#0f111a", fg="white").pack(pady=10)
@@ -95,6 +95,7 @@ timer_label = tk.Label(left_frame, text="⏱ 15",
                        bg="#0f111a", fg="#ffaa00")
 timer_label.pack(pady=5)
 
+# ---------------- BAR ----------------
 canvas = tk.Canvas(left_frame, width=500, height=25, bg="#222", highlightthickness=0)
 canvas.pack(pady=10)
 bar = canvas.create_rectangle(0, 0, 500, 25, fill="green")
@@ -151,15 +152,13 @@ def update_ranking():
     ranking_labels.clear()
 
     for i, (name, score) in enumerate(sorted_players):
-        text = f"{i+1}: {name} : {score}"  # 👈 ICI CHANGEMENT
         lbl = tk.Label(right_frame,
-                       text=text,
+                       text=f"{i+1}: {name} : {score}",
                        font=("Arial", 12, "bold"),
                        bg="#1b1f2a",
                        fg="white",
                        anchor="w")
         lbl.pack(anchor="w", padx=10, pady=2)
-
         ranking_labels[name] = lbl
 
 def get_score(t):
@@ -211,6 +210,7 @@ def set_question():
     stop_timer()
     joueur_actif = None
     paused = False
+    pause_btn.config(text="⏸ PAUSE", bg="#ffaa00")
 
     clear_ui()
 
@@ -234,6 +234,26 @@ def next_question():
     timer_running = False
 
     index_question += 1
+    set_question()
+
+# ---------------- RESET QUIZ ----------------
+
+def reset_quiz():
+    global index_question, timer_value, timer_running, joueur_actif, paused
+
+    stop_timer()
+
+    index_question = 0
+    timer_value = TIMER_MAX
+    timer_running = False
+    paused = False
+    joueur_actif = None
+
+    for p in players:
+        players[p] = 0
+
+    update_scores()
+    clear_ui()
     set_question()
 
 # ---------------- PAUSE ----------------
@@ -273,6 +293,12 @@ tk.Button(btn_frame, text="SUIVANT",
           bg="#00aaff", fg="white",
           font=("Arial", 12, "bold"),
           padx=15, pady=8).grid(row=0, column=1, padx=5)
+
+tk.Button(btn_frame, text="RESET QUIZ",
+          command=reset_quiz,
+          bg="#ff4d4d", fg="white",
+          font=("Arial", 12, "bold"),
+          padx=15, pady=8).grid(row=0, column=2, padx=5)
 
 # ---------------- ARDUINO ----------------
 
