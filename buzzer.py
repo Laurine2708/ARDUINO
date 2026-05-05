@@ -17,9 +17,7 @@ players = {
     "Joueur 4": 0
 }
 
-tentative = 0
 joueur_actif = None
-bonne_reponse = False
 
 player_names = {
     "1": "Joueur 1",
@@ -49,7 +47,7 @@ index_question = 0
 # ---------------- UI ----------------
 root = tk.Tk()
 root.title("QUIZ ARDUINO BUZZER")
-root.geometry("1000x650")
+root.geometry("1000x700")
 root.configure(bg="#0f111a")
 
 tk.Label(root, text="QUIZ ARDUINO BUZZER",
@@ -86,11 +84,16 @@ buzzer_label = tk.Label(root, text="",
                         bg="#0f111a", fg="#00ff99")
 buzzer_label.pack(pady=5)
 
-# TIMER
+# TIMER LABEL
 timer_label = tk.Label(root, text="⏱ 15",
                        font=("Arial", 18, "bold"),
                        bg="#0f111a", fg="#ffaa00")
 timer_label.pack(pady=5)
+
+# BARRE
+progress_canvas = tk.Canvas(root, width=600, height=30, bg="#222", highlightthickness=0)
+progress_canvas.pack(pady=10)
+progress_bar = progress_canvas.create_rectangle(0, 0, 600, 30, fill="green")
 
 # PLAYERS
 frame_players = tk.Frame(root, bg="#0f111a")
@@ -126,13 +129,31 @@ def update_scores():
     for p in players:
         player_frames[p]["score"].config(text=str(players[p]))
 
+def get_color_and_score(t):
+    if t >= 12:
+        return "green", 5
+    elif t >= 9:
+        return "blue", 3
+    elif t >= 6:
+        return "yellow", 2
+    elif t >= 1:
+        return "red", 1
+    else:
+        return "gray", 0
+
 def update_timer():
     global timer_value, timer_running
 
-    if not timer_running:
+    if not timer_running or joueur_actif is not None:
         return
 
     timer_label.config(text=f"⏱ {timer_value}")
+
+    width = int((timer_value / TIMER_MAX) * 600)
+    color, _ = get_color_and_score(timer_value)
+
+    progress_canvas.coords(progress_bar, 0, 0, width, 30)
+    progress_canvas.itemconfig(progress_bar, fill=color)
 
     if timer_value > 0:
         timer_value -= 1
@@ -147,11 +168,8 @@ def update_timer():
         root.after(2000, next_question)
 
 def set_question():
-    global tentative, bonne_reponse, joueur_actif
-    global timer_value, timer_running
+    global joueur_actif, timer_value, timer_running
 
-    tentative = 0
-    bonne_reponse = False
     joueur_actif = None
 
     if index_question < len(questions):
@@ -166,7 +184,6 @@ def set_question():
     result_label.config(text="", bg="#0f111a")
     buzzer_label.config(text="")
 
-    # TIMER RESET
     timer_value = TIMER_MAX
     timer_running = True
     update_timer()
@@ -181,14 +198,12 @@ def highlight_player(name):
     buzzer_label.config(text=f"{name} a buzzé !")
 
 def reset_game():
-    global index_question, tentative, joueur_actif, timer_running
+    global index_question, timer_running
 
     for p in players:
         players[p] = 0
 
     index_question = 0
-    tentative = 0
-    joueur_actif = None
     timer_running = False
 
     update_scores()
@@ -200,29 +215,12 @@ def next_question():
     index_question += 1
     set_question()
 
-# ---------------- BOUTONS ----------------
-btn_frame = tk.Frame(root, bg="#0f111a")
-btn_frame.pack(pady=15)
-
-tk.Button(btn_frame, text="RESET",
-          command=reset_game,
-          bg="#ff4d4d", fg="white",
-          font=("Arial", 12, "bold"),
-          padx=20, pady=10).grid(row=0, column=0, padx=10)
-
-tk.Button(btn_frame, text="QUESTION SUIVANTE",
-          command=next_question,
-          bg="#00aaff", fg="white",
-          font=("Arial", 12, "bold"),
-          padx=20, pady=10).grid(row=0, column=1, padx=10)
-
 # ---------------- ARDUINO ----------------
 
 def listen_arduino():
     try:
         ser = serial.Serial(PORT, BAUDRATE, timeout=1)
         time.sleep(2)
-        print("Arduino connecté")
 
         while True:
             if ser.in_waiting > 0:
@@ -232,35 +230,35 @@ def listen_arduino():
     except Exception as e:
         print("Erreur série:", e)
 
-# ---------------- EVENT HANDLER ----------------
+# ---------------- EVENTS ----------------
 
 def process_events():
-    global joueur_actif, tentative, timer_running
+    global joueur_actif, timer_running
 
     while not event_queue.empty():
         msg = event_queue.get()
-        print("Event:", msg)
 
         # BUZZ
         if msg.startswith("BUZZ:"):
-            if not timer_running:
+            if not timer_running or joueur_actif is not None:
                 continue
 
             num = msg.split(":")[1].strip()
             joueur = player_names.get(num, num)
 
             joueur_actif = joueur
+
+            # ⏸️ STOP TIMER au buzz
+            timer_running = False
+
             highlight_player(joueur)
 
         # BONNE REPONSE
         elif msg == "true":
-            if joueur_actif and joueur_actif in players:
-                # points selon temps restant
-                score = max(1, timer_value // 3)
+            if joueur_actif:
+                _, score = get_color_and_score(timer_value)
                 players[joueur_actif] += score
                 update_scores()
-
-            timer_running = False
 
             result_label.config(text="✔ BONNE RÉPONSE",
                                 bg="green", fg="white")
@@ -270,15 +268,16 @@ def process_events():
 
         # MAUVAISE REPONSE
         elif msg == "false":
-            if joueur_actif and joueur_actif in players:
+            if joueur_actif:
                 players[joueur_actif] -= 1
                 update_scores()
 
             result_label.config(text="✖ MAUVAISE RÉPONSE",
                                 bg="red", fg="white")
 
-            tentative += 1
             joueur_actif = None
+            timer_running = True
+            update_timer()
 
             root.after(1500, lambda: result_label.config(text="", bg="#0f111a"))
 
@@ -291,5 +290,4 @@ set_question()
 update_scores()
 process_events()
 
-print("Interface prête")
 root.mainloop()
