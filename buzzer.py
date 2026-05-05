@@ -17,9 +17,6 @@ players = {
     "Joueur 4": 0
 }
 
-joueur_actif = None
-event_queue = queue.Queue()
-
 player_names = {
     "1": "Joueur 1",
     "2": "Joueur 2",
@@ -27,7 +24,10 @@ player_names = {
     "4": "Joueur 4"
 }
 
-# -------- TIMER --------
+joueur_actif = None
+event_queue = queue.Queue()
+
+# ---------------- TIMER ----------------
 TIMER_MAX = 15
 timer_value = TIMER_MAX
 timer_running = False
@@ -43,108 +43,157 @@ except:
 
 index_question = 0
 
-# ---------------- UI ----------------
+# ---------------- FENÊTRES ----------------
 root = tk.Tk()
 root.title("QUIZ ARDUINO BUZZER")
-root.geometry("1000x700")
+root.geometry("1200x700")
 root.configure(bg="#0f111a")
 
-tk.Label(root, text="QUIZ ARDUINO BUZZER",
+# ===================== LEFT FRAME (JEU) =====================
+left_frame = tk.Frame(root, bg="#0f111a")
+left_frame.pack(side="left", fill="both", expand=True)
+
+# ===================== RIGHT FRAME (RANKING) =====================
+right_frame = tk.Frame(root, bg="#1b1f2a", width=250)
+right_frame.pack(side="right", fill="y")
+
+# ---------------- TITRE ----------------
+tk.Label(left_frame, text="QUIZ ARDUINO BUZZER",
          font=("Arial", 26, "bold"),
          bg="#0f111a", fg="white").pack(pady=10)
 
-question_label = tk.Label(root, text="", font=("Arial", 22),
-                          bg="#0f111a", fg="#00d4ff", wraplength=800)
-question_label.pack(pady=10)
+# ---------------- QUESTION ----------------
+question_frame = tk.Frame(left_frame, bg="#1b1f2a",
+                          highlightthickness=2,
+                          highlightbackground="#2c3142")
+question_frame.pack(pady=20, ipadx=25, ipady=25)
 
-answer_label = tk.Label(root, text="", font=("Arial", 16),
-                        bg="#0f111a", fg="#aaaaaa", wraplength=800)
-answer_label.pack(pady=5)
+question_label = tk.Label(question_frame, text="",
+                          font=("Arial", 24, "bold"),
+                          bg="#1b1f2a", fg="#00d4ff",
+                          wraplength=600)
+question_label.pack()
 
-result_label = tk.Label(root, text="", font=("Arial", 18, "bold"),
+answer_label = tk.Label(question_frame, text="",
+                        font=("Arial", 18),
+                        bg="#1b1f2a", fg="#aaaaaa",
+                        wraplength=600)
+answer_label.pack(pady=10)
+
+result_label = tk.Label(left_frame, text="",
+                        font=("Arial", 20, "bold"),
                         bg="#0f111a", fg="white")
-result_label.pack()
+result_label.pack(pady=5)
 
-buzzer_label = tk.Label(root, text="", font=("Arial", 14),
+buzzer_label = tk.Label(left_frame, text="",
+                        font=("Arial", 16, "bold"),
                         bg="#0f111a", fg="#00ff99")
-buzzer_label.pack()
+buzzer_label.pack(pady=5)
 
-timer_label = tk.Label(root, text="⏱ 15",
+timer_label = tk.Label(left_frame, text="⏱ 15",
                        font=("Arial", 18, "bold"),
                        bg="#0f111a", fg="#ffaa00")
-timer_label.pack()
+timer_label.pack(pady=5)
 
-# BARRE
-canvas = tk.Canvas(root, width=600, height=25, bg="#222", highlightthickness=0)
+canvas = tk.Canvas(left_frame, width=500, height=25, bg="#222", highlightthickness=0)
 canvas.pack(pady=10)
-bar = canvas.create_rectangle(0, 0, 600, 25, fill="green")
+bar = canvas.create_rectangle(0, 0, 500, 25, fill="green")
 
-# ---------------- PLAYERS UI ----------------
-frame_players = tk.Frame(root, bg="#0f111a")
-frame_players.pack(pady=25)
+# ---------------- PLAYERS ----------------
+frame_players = tk.Frame(left_frame, bg="#0f111a")
+frame_players.pack(pady=20)
 
 player_frames = {}
 
 def create_card(name, col):
     card = tk.Frame(frame_players, bg="#1b1f2a",
-                    width=200, height=140,
+                    width=180, height=120,
                     highlightthickness=2,
                     highlightbackground="#2c3142")
-    card.grid(row=0, column=col, padx=15)
+    card.grid(row=0, column=col, padx=10)
     card.pack_propagate(False)
 
     tk.Label(card, text=name,
-             font=("Arial", 14, "bold"),
-             bg="#1b1f2a", fg="white").pack(pady=10)
+             font=("Arial", 12, "bold"),
+             bg="#1b1f2a", fg="white").pack(pady=5)
 
     score = tk.Label(card, text="0",
-                     font=("Arial", 28, "bold"),
+                     font=("Arial", 24, "bold"),
                      bg="#1b1f2a", fg="#00ff99")
     score.pack()
 
-    player_frames[name] = {"card": card, "score": score}
+    player_frames[name] = score
 
 for i, p in enumerate(players):
     create_card(p, i)
+
+# ---------------- CLASSEMENT ----------------
+tk.Label(right_frame,
+         text="🏆 CLASSEMENT",
+         font=("Arial", 16, "bold"),
+         bg="#1b1f2a",
+         fg="white").pack(pady=15)
+
+ranking_labels = {}
 
 # ---------------- LOGIQUE ----------------
 
 def update_scores():
     for p in players:
-        player_frames[p]["score"].config(text=str(players[p]))
+        player_frames[p].config(text=str(players[p]))
+    update_ranking()
 
-def get_color_and_score(t):
+def update_ranking():
+    sorted_players = sorted(players.items(), key=lambda x: x[1], reverse=True)
+
+    for w in ranking_labels.values():
+        w.destroy()
+    ranking_labels.clear()
+
+    for i, (name, score) in enumerate(sorted_players):
+        text = f"{i+1}: {name} : {score}"  # 👈 ICI CHANGEMENT
+        lbl = tk.Label(right_frame,
+                       text=text,
+                       font=("Arial", 12, "bold"),
+                       bg="#1b1f2a",
+                       fg="white",
+                       anchor="w")
+        lbl.pack(anchor="w", padx=10, pady=2)
+
+        ranking_labels[name] = lbl
+
+def get_score(t):
     if t >= 12:
-        return "green", 5
+        return 5
     elif t >= 9:
-        return "blue", 3
+        return 3
     elif t >= 6:
-        return "yellow", 2
+        return 2
     elif t >= 1:
-        return "red", 1
-    return "gray", 0
+        return 1
+    return 0
 
-# ---------------- TIMER FIX STABLE ----------------
+def clear_ui():
+    result_label.config(text="", bg="#0f111a")
+    buzzer_label.config(text="")
 
 def stop_timer():
     global timer_job
-    if timer_job is not None:
+    if timer_job:
         root.after_cancel(timer_job)
-        timer_job = None
+
+# ---------------- TIMER ----------------
 
 def update_timer():
     global timer_value, timer_running, timer_job
 
-    if not timer_running or paused or joueur_actif is not None:
+    if not timer_running or paused or joueur_actif:
         return
 
     timer_label.config(text=f"⏱ {timer_value}")
 
-    width = int((timer_value / TIMER_MAX) * 600)
-    color, _ = get_color_and_score(timer_value)
-
+    width = int((timer_value / TIMER_MAX) * 500)
     canvas.coords(bar, 0, 0, width, 25)
-    canvas.itemconfig(bar, fill=color)
 
     if timer_value > 0:
         timer_value -= 1
@@ -152,7 +201,7 @@ def update_timer():
     else:
         timer_running = False
         result_label.config(text="⏱ TEMPS ÉCOULÉ", fg="orange")
-        root.after(2000, next_question)
+        root.after(1500, next_question)
 
 # ---------------- QUESTIONS ----------------
 
@@ -160,10 +209,10 @@ def set_question():
     global timer_value, timer_running, joueur_actif, paused
 
     stop_timer()
-
     joueur_actif = None
     paused = False
-    pause_btn.config(text="⏸ PAUSE", bg="#ffaa00")
+
+    clear_ui()
 
     if index_question < len(questions):
         q = questions[index_question]
@@ -173,9 +222,6 @@ def set_question():
         question_label.config(text="FIN DU JEU")
         answer_label.config(text="")
         return
-
-    result_label.config(text="")
-    buzzer_label.config(text="")
 
     timer_value = TIMER_MAX
     timer_running = True
@@ -188,17 +234,6 @@ def next_question():
     timer_running = False
 
     index_question += 1
-    set_question()
-
-def reset_questions():
-    global index_question, timer_running, joueur_actif
-
-    stop_timer()
-
-    index_question = 0
-    timer_running = False
-    joueur_actif = None
-
     set_question()
 
 # ---------------- PAUSE ----------------
@@ -218,31 +253,26 @@ def toggle_pause():
 
 # ---------------- BUZZ ----------------
 
-def highlight_player(name):
-    buzzer_label.config(text=f"{name} a buzzé !")
+def show_buzz(name):
+    buzzer_label.config(text=f"🔥 {name} a buzzé !")
 
 # ---------------- BOUTONS ----------------
-btn_frame = tk.Frame(root, bg="#0f111a")
+
+btn_frame = tk.Frame(left_frame, bg="#0f111a")
 btn_frame.pack(pady=10)
 
 pause_btn = tk.Button(btn_frame, text="⏸ PAUSE",
                       command=toggle_pause,
                       bg="#ffaa00", fg="black",
                       font=("Arial", 12, "bold"),
-                      padx=20, pady=10)
-pause_btn.grid(row=0, column=0, padx=10)
+                      padx=15, pady=8)
+pause_btn.grid(row=0, column=0, padx=5)
 
 tk.Button(btn_frame, text="SUIVANT",
           command=next_question,
           bg="#00aaff", fg="white",
           font=("Arial", 12, "bold"),
-          padx=20, pady=10).grid(row=0, column=1, padx=10)
-
-tk.Button(btn_frame, text="RESET QUESTIONS",
-          command=reset_questions,
-          bg="#ff4d4d", fg="white",
-          font=("Arial", 12, "bold"),
-          padx=20, pady=10).grid(row=0, column=2, padx=10)
+          padx=15, pady=8).grid(row=0, column=1, padx=5)
 
 # ---------------- ARDUINO ----------------
 
@@ -267,9 +297,8 @@ def process_events():
         if paused:
             continue
 
-        # BUZZ
         if msg.startswith("BUZZ:"):
-            if not timer_running or joueur_actif is not None:
+            if not timer_running or joueur_actif:
                 continue
 
             num = msg.split(":")[1]
@@ -277,27 +306,26 @@ def process_events():
 
             joueur_actif = joueur
             timer_running = False
-            stop_timer()
-            highlight_player(joueur)
+            show_buzz(joueur)
 
-        # BONNE REPONSE
         elif msg == "true":
             if joueur_actif:
-                _, pts = get_color_and_score(timer_value)
-                players[joueur_actif] += pts
+                players[joueur_actif] += get_score(timer_value)
                 update_scores()
 
             result_label.config(text="✔ BONNE RÉPONSE", fg="green")
-            root.after(1500, next_question)
+            root.after(1200, next_question)
 
-        # MAUVAISE REPONSE
         elif msg == "false":
             if joueur_actif:
                 players[joueur_actif] -= 1
                 update_scores()
 
             result_label.config(text="✖ MAUVAISE RÉPONSE", fg="red")
+
             joueur_actif = None
+            root.after(1200, clear_ui)
+
             timer_running = True
             update_timer()
 
